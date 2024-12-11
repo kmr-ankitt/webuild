@@ -284,6 +284,9 @@ Here are some examples of correct usage of artifacts:
     </assistant_response>
   </example>
 </examples>
+
+
+One important thing: dont return fenced code block in response
 `;
 
 export const CONTINUE_PROMPT = stripIndents`
