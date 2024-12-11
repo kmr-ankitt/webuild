@@ -29,7 +29,7 @@ export function Builder() {
   const location = useLocation();
   const { prompt } = location.state as { prompt: string };
   const [userPrompt, setPrompt] = useState("");
-  const [llmMessages, setLlmMessages] = useState<{role: "user" | "assistant", content: string;}[]>([]);
+  const [llmMessages, setLlmMessages] = useState<{ role: "user" | "assistant"; parts: { text: string }[] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [templateSet, setTemplateSet] = useState(false);
   const webcontainer = useWebContainer();
@@ -157,39 +157,42 @@ export function Builder() {
     const response = await axios.post(`${BACKEND_URL}/template`, {
       prompt: prompt.trim()
     });
-    // console.log(object)
+    console.log(response.data)
     setTemplateSet(true);
     
     const {prompts, uiPrompts} = response.data;
 
-    setSteps(parseXml(uiPrompts[0]).map((x: Step) => ({
+    setSteps(parseXml(uiPrompts[0]).map((x: Step, index: number) => ({
       ...x,
-      status: "pending"
+      status: "pending",
+      id: index // Ensure each step has a unique id
     })));
 
     setLoading(true);
     const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
       messages: [...prompts, prompt].map(content => ({
-        role: "user",
-        parts: [{
-          text: content
+        "role": "user",
+        "parts": [{
+          "text": content
         }]
       }))
     })
 
     setLoading(false);
-
-    setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+    setSteps(s => [...s, ...parseXml(stepsResponse.data.messages).map((x, index) => ({
       ...x,
-      status: "pending" as "pending"
+      status: "pending" as "pending",
+      id: s.length + index // Ensure each step has a unique id
     }))]);
 
     setLlmMessages([...prompts, prompt].map(content => ({
       role: "user",
-      content
+      parts: [{
+        text: content
+      }]
     })));
 
-    setLlmMessages(x => [...x, {role: "assistant", content: stepsResponse.data.response}])
+    setLlmMessages(x => [...x, {role: "assistant", parts: [{ text: stepsResponse.data.messages }]}])
   }
 
   useEffect(() => {
@@ -225,7 +228,7 @@ export function Builder() {
                   <button onClick={async () => {
                     const newMessage = {
                       role: "user" as "user",
-                      content: userPrompt
+                      parts: [{ text: userPrompt }]
                     };
 
                     setLoading(true);
@@ -237,7 +240,9 @@ export function Builder() {
                     setLlmMessages(x => [...x, newMessage]);
                     setLlmMessages(x => [...x, {
                       role: "assistant",
-                      content: stepsResponse.data.response
+                      parts: [{
+                      text: stepsResponse.data.messages
+                      }]
                     }]);
                     
                     setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
