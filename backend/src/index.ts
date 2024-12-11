@@ -1,17 +1,15 @@
-import {GoogleGenerativeAI} from "@google/generative-ai";
-
 import { configDotenv } from "dotenv";
-configDotenv();
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import express, { response } from "express";
+import { basePrompt as reactBasePrompt } from "./defaults/react";
+import { basePrompt as nodeBasePrompt } from "./defaults/node";
+import { BASE_PROMPT, getSystemPrompt } from "./prompts";
 
-async function main(){
-  const GEMINI_API_KEY : string = process.env.GEMINI_API_KEY || "";
-  
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", 
-    generationConfig: { 
-      maxOutputTokens: 1024,
-      temperature: 0,
-     } 
+configDotenv();
+const PORT = 3000;
+const app = express();
+app.use(express.json());
+
   });
   
   const prompt = "write code for a todo web app ";
