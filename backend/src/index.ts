@@ -40,14 +40,52 @@ app.post("/template", async (req, res) => {
       maxOutputTokens: 200,
     },
   });
-  const prompt = "write code for a todo web app ";
-  
-  const result = await model.generateContentStream(prompt);
 
-  for await (const chunk of result.stream) {
-  const chunkText = chunk.text();
-  process.stdout.write(chunkText);
-}
-}
+  const ans = result.response.text().toLowerCase().trim();
+  if (ans == "react") {
+    res.status(200).json({
+      prompts: [
+        BASE_PROMPT,
+        `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`,
+      ],
+      uiPrompts: [reactBasePrompt],
+    });
+    return;
+  }
 
-main(); 
+  if (ans == "node") {
+    res.json({
+      prompts: [
+        BASE_PROMPT,
+        `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${nodeBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`,
+      ],
+      uiPrompts: [nodeBasePrompt],
+    });
+    return;
+  }
+
+  res.status(403).send("You cant access this.");
+  return;
+});
+
+app.post("/chat", async (req, res) => {
+  const messages = req.body.messages;
+  try {
+    const result = await model.generateContent({
+      contents: messages,
+      systemInstruction: getSystemPrompt(),
+    });
+
+    res.json({
+      messages: result.response.text(),
+    });
+    return;
+  } catch (error) {
+    console.error(error);
+    res.status(400).send("Generation failed");
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
