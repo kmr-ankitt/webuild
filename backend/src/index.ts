@@ -10,8 +10,36 @@ const PORT = 3000;
 const app = express();
 app.use(express.json());
 
+const GEMINI_API_KEY: string = process.env.GEMINI_API_KEY || "";
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
+});
+
+app.post("/template", async (req, res) => {
+  const prompt = req.body.prompt;
+  if (!req.body.prompt) {
+    res.status(400).send("Prompt is required");
+    return;
+  }
+
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: prompt,
+          },
+        ],
+      },
+    ],
+    systemInstruction:
+      "If it is a react project, reply with 'react'. If it is a node project, reply with 'node'. No extra information is needed. If it has not specified the type of project, then think of yourself which node or react will be better for that title.",
+    generationConfig: {
+      maxOutputTokens: 200,
+    },
   });
-  
   const prompt = "write code for a todo web app ";
   
   const result = await model.generateContentStream(prompt);
