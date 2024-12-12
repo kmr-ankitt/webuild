@@ -91,6 +91,10 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+app.get("/",(req,res)=>{
+  res.send("Server running");
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
